@@ -2,12 +2,12 @@
 
 import time
 import logging
+import shutil
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from retrying import retry
 
 # Configure logging
@@ -33,13 +33,20 @@ def enter_iframe(browser):
 def extension_login():
     chrome_options = webdriver.ChromeOptions()
 
+    # Headless for GitHub Actions
+    chrome_options.add_argument('--headless=new')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--window-size=1920,1080')
+
     logging.info("Load Chrome extension NetEaseMusicWorldPlus")
     chrome_options.add_extension('NetEaseMusicWorldPlus.crx')
 
-    logging.info("Initializing Chrome WebDriver")
+    # Use preinstalled chromedriver from system path
     try:
-        # ✅ 使用 win64 架构的 chromedriver
-        service = Service(ChromeDriverManager(os_type="win64").install())
+        chromedriver_path = shutil.which("chromedriver")
+        service = Service(executable_path=chromedriver_path)
         browser = webdriver.Chrome(service=service, options=chrome_options)
     except Exception as e:
         logging.error(f"Failed to initialize ChromeDriver: {e}")
@@ -56,10 +63,10 @@ def extension_login():
 
     browser.refresh()
     time.sleep(5)
-    logging.info("Cookie login successful")
+    browser.save_screenshot("after_login.png")
+    logging.info("Cookie login successful. Screenshot saved.")
 
     logging.info("Unlock finished")
-    time.sleep(10)
     browser.quit()
 
 if __name__ == '__main__':
